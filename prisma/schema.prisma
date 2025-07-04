@@ -1,0 +1,31 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Metric {
+  id           Int      @id @default(autoincrement())
+  status       String   // 'up' ou 'down'
+  responseTime Int      // en millisecondes
+  url          String
+  timestamp    DateTime @default(now())
+  error        String?  // message d'erreur optionnel
+  alerts       Alert[]
+}
+
+model Alert {
+  id        Int      @id @default(autoincrement())
+  type      String   // 'status_change' ou 'high_latency'
+  message   String
+  timestamp DateTime @default(now())
+  metric    Metric   @relation(fields: [metricId], references: [id])
+  metricId  Int
+} 
