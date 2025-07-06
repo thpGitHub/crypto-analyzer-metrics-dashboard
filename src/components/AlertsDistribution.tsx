@@ -1,44 +1,40 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Doughnut } from 'react-chartjs-2';
+import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { metricsService, Metric } from '@/services/metricsService';
+import { metricsService, Alert } from '@/services/metricsService';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function AlertsDistribution() {
-  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchMetrics = async () => {
+    async function fetchAlerts() {
       try {
-        const data = await metricsService.getMetrics();
-        setMetrics(data);
-        setError(null);
+        const metrics = await metricsService.getMetrics();
+        const allAlerts = metrics.flatMap(m => m.alerts || []);
+        setAlerts(allAlerts);
       } catch (err) {
-        setError('Failed to fetch metrics');
-        console.error(err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch alerts');
+      } finally {
+        setLoading(false);
       }
-    };
+    }
 
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 30000);
+    fetchAlerts();
+    // Rafraîchir toutes les 30 secondes
+    const interval = setInterval(fetchAlerts, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  if (error) {
-    return <div className="text-red-600">{error}</div>;
-  }
+  if (loading) return <div>Chargement des alertes...</div>;
+  if (error) return <div>Erreur: {error}</div>;
+  if (!alerts || alerts.length === 0) return <div>Aucune alerte</div>;
 
-  if (metrics.length === 0) {
-    return <div>Loading...</div>;
-  }
-
-  // Extraire toutes les alertes
-  const alerts = metrics.flatMap(m => m.alerts);
-  
   // Compter les types d'alertes
   const alertTypes = {
     'status_change': alerts.filter(a => a.type === 'status_change').length,
@@ -49,40 +45,24 @@ export default function AlertsDistribution() {
     labels: ['Changement de statut', 'Latence élevée'],
     datasets: [
       {
-        data: [alertTypes.status_change, alertTypes.high_latency],
-        backgroundColor: [
-          'rgba(234, 179, 8, 0.5)',
-          'rgba(239, 68, 68, 0.5)'
-        ],
-        borderColor: [
-          'rgb(234, 179, 8)',
-          'rgb(239, 68, 68)'
-        ],
-        borderWidth: 1
+        data: [alertTypes['status_change'], alertTypes['high_latency']],
+        backgroundColor: ['#FF6384', '#36A2EB'],
+        hoverBackgroundColor: ['#FF6384', '#36A2EB']
       }
     ]
   };
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom' as const
-      }
-    }
-  };
-
-  const totalAlerts = alerts.length;
-
   return (
     <div>
-      <div className="text-center mb-4">
-        <span className="text-2xl font-bold">{totalAlerts}</span>
-        <span className="text-gray-500 ml-2">alertes au total</span>
-      </div>
-      <div className="h-[200px] flex justify-center">
-        <Doughnut data={data} options={options} />
+      <h2 className="text-xl font-bold mb-4">Distribution des Alertes</h2>
+      <div className="w-full h-64">
+        <Pie 
+          data={data}
+          options={{
+            responsive: true,
+            maintainAspectRatio: false
+          }}
+        />
       </div>
     </div>
   );

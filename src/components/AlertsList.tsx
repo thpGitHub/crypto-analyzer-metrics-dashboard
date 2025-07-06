@@ -17,6 +17,7 @@ export default function AlertsList() {
         const allAlerts = metrics
           .flatMap(metric => metric.alerts.map(alert => ({
             ...alert,
+            serviceName: metric.serviceName,
             metricId: metric.id
           })))
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -57,12 +58,12 @@ export default function AlertsList() {
     }
   };
 
-  const formatAlertMessage = (alert: any) => {
+  const formatAlertMessage = (alert: Alert) => {
     if (alert.type === 'status_change') {
-      return `Service ${alert.from} → ${alert.to}`;
+      return `Service ${alert.serviceName}: ${alert.fromStatus || 'up'} → ${alert.toStatus || 'down'}`;
     }
     if (alert.type === 'high_latency') {
-      return `Latence élevée: ${alert.responseTime}ms (seuil: ${alert.threshold}ms)`;
+      return `${alert.serviceName} - Latence élevée: ${alert.responseTime}ms (seuil: ${alert.threshold}ms)`;
     }
     return alert.message || 'Alerte inconnue';
   };

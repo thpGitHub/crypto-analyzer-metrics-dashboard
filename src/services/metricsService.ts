@@ -1,19 +1,20 @@
-const METRICS_SERVICE_URL = process.env.NEXT_PUBLIC_METRICS_SERVICE_URL || 'http://localhost:3007';
-
 export interface Alert {
   type: 'status_change' | 'high_latency';
-  message?: string;
+  message: string;
   timestamp: string;
-  from?: string;
-  to?: string;
+  fromStatus?: string;
+  toStatus?: string;
   responseTime?: number;
   threshold?: number;
-  url?: string;
+  url: string;
   error?: string;
+  serviceName?: string;
+  metricId: number;
 }
 
 export interface Metric {
-  id: string;
+  id: number;
+  serviceName: string;
   status: string;
   responseTime: number;
   url: string;
@@ -22,17 +23,27 @@ export interface Metric {
   alerts: Alert[];
 }
 
+export interface ServiceStatus {
+  status: string;
+  uptime: number;
+  services: Array<{
+    name: string;
+    status: string;
+    lastCheck: string;
+  }>;
+}
+
 export const metricsService = {
   async getMetrics(): Promise<Metric[]> {
-    const response = await fetch(`${METRICS_SERVICE_URL}/api/metrics`);
+    const response = await fetch('/api/metrics');
     if (!response.ok) {
       throw new Error('Failed to fetch metrics');
     }
     return response.json();
   },
 
-  async getServiceStatus(): Promise<{ status: string; uptime: number }> {
-    const response = await fetch(`${METRICS_SERVICE_URL}/api/status`);
+  async getServiceStatus(): Promise<ServiceStatus> {
+    const response = await fetch('/api/status');
     if (!response.ok) {
       throw new Error('Failed to fetch service status');
     }

@@ -13,6 +13,7 @@ datasource db {
 
 model Metric {
   id           Int      @id @default(autoincrement())
+  serviceName  String   // nom du service
   status       String   // 'up' ou 'down'
   responseTime Int      // en millisecondes
   url          String
@@ -22,10 +23,16 @@ model Metric {
 }
 
 model Alert {
-  id        Int      @id @default(autoincrement())
-  type      String   // 'status_change' ou 'high_latency'
-  message   String
-  timestamp DateTime @default(now())
-  metric    Metric   @relation(fields: [metricId], references: [id])
-  metricId  Int
+  id           Int      @id @default(autoincrement())
+  type         String   // 'status_change' ou 'high_latency'
+  message      String
+  timestamp    DateTime @default(now())
+  fromStatus   String?  // pour les alertes de type status_change
+  toStatus     String?  // pour les alertes de type status_change
+  responseTime Int?     // pour les alertes de type high_latency
+  threshold    Int?     // pour les alertes de type high_latency
+  url          String
+  error        String?
+  metric       Metric   @relation(fields: [metricId], references: [id])
+  metricId     Int
 } 
